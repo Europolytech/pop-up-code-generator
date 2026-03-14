@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsive Announcement Pop-up Generator</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: rgba(255,255,255,0.82);
+      --panel-solid: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: rgba(15, 23, 42, 0.08);
+      --primary: #2563eb;
+      --primary-2: #1d4ed8;
+      --shadow: 0 24px 60px rgba(15, 23, 42, 0.14);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.12), transparent 24%),
+        radial-gradient(circle at top right, rgba(124, 58, 237, 0.10), transparent 20%),
+        linear-gradient(180deg, #f8fafc, #eef2ff 100%);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .app {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      background: var(--panel);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 28px 28px 10px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--primary);
+      font-weight: 700;
+      background: rgba(37, 99, 235, 0.08);
+      border: 1px solid rgba(37, 99, 235, 0.12);
+      padding: 7px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.9rem, 2.4vw, 3rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    .subtext {
+      margin: 12px 0 0;
+      color: var(--muted);
+      line-height: 1.65;
+      font-size: 0.98rem;
+      max-width: 68ch;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      padding: 20px 28px 28px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.93rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+      margin-top: -2px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(255,255,255,0.88);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 14px 15px;
+      font: inherit;
+      outline: none;
+      transition: 180ms ease;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    }
+
+    textarea { min-height: 110px; resize: vertical; }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(37, 99, 235, 0.5);
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+      background: #fff;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 0 28px 28px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 16px;
+      padding: 13px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+    }
+
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(0); }
+
+    .primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: white;
+      box-shadow: 0 14px 34px rgba(37, 99, 235, 0.25);
+    }
+
+    .secondary {
+      background: white;
+      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: 0 8px 24px rgba(15,23,42,0.06);
+    }
+
+    .preview-wrap {
+      display: grid;
+      gap: 18px;
+      position: sticky;
+      top: 24px;
+    }
+
+    .preview-shell {
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      min-height: 630px;
+      position: relative;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .mock-site {
+      padding: 28px;
+      height: 100%;
+      background:
+        linear-gradient(180deg, rgba(248,250,252,0.96), rgba(241,245,249,0.96)),
+        radial-gradient(circle at 20% 20%, rgba(59,130,246,0.09), transparent 18%),
+        radial-gradient(circle at 80% 15%, rgba(168,85,247,0.10), transparent 18%);
+    }
+
+    .mock-topbar, .mock-card, .mock-line {
+      background: white;
+      border: 1px solid rgba(148,163,184,0.12);
+      border-radius: 18px;
+    }
+
+    .mock-topbar {
+      height: 68px;
+      margin-bottom: 18px;
+      box-shadow: 0 10px 24px rgba(15,23,42,0.05);
+    }
+
+    .mock-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 18px;
+    }
+
+    .mock-card {
+      min-height: 160px;
+      padding: 18px;
+      box-shadow: 0 10px 24px rgba(15,23,42,0.05);
+    }
+
+    .mock-line { height: 14px; margin-bottom: 12px; }
+    .mock-line.short { width: 50%; }
+    .mock-line.mid { width: 75%; }
+
+    .preview-label {
+      padding: 18px 20px 0;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #334155;
+    }
+
+    .output-card {
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .output-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(148,163,184,0.18);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .output-head strong { font-size: 1rem; }
+
+    pre {
+      margin: 0;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 22px;
+      overflow: auto;
+      max-height: 460px;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .status {
+      color: var(--muted);
+      font-size: 0.84rem;
+      padding: 0 28px 28px;
+    }
+
+    .popup-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, 0.45);
+      opacity: 0;
+      visibility: hidden;
+      transition: 260ms ease;
+      z-index: 20;
+    }
+
+    .popup-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .popup-box {
+      width: min(94%, 540px);
+      max-height: min(86vh, 640px);
+      overflow: auto;
+      background: rgba(255,255,255,0.96);
+      border: 1px solid rgba(255,255,255,0.7);
+      border-radius: 28px;
+      box-shadow: 0 30px 70px rgba(15, 23, 42, 0.28);
+      padding: 18px;
+      position: relative;
+      transform-origin: center center;
+    }
+
+    .popup-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.06);
+      color: #0f172a;
+      padding: 0;
+      font-size: 1.05rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup-media {
+      width: 100%;
+      border-radius: 22px;
+      overflow: hidden;
+      background: linear-gradient(180deg, #e2e8f0, #f8fafc);
+      margin-bottom: 16px;
+      aspect-ratio: 16 / 9;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .popup-media.show { display: flex; }
+    .popup-media img, .popup-media iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+    .popup-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--primary);
+      background: rgba(37, 99, 235, 0.09);
+      border: 1px solid rgba(37, 99, 235, 0.16);
+    }
+
+    .popup-title {
+      margin: 14px 0 8px;
+      font-size: clamp(1.45rem, 2vw, 2.1rem);
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+
+    .popup-text {
+      margin: 0 0 18px;
+      color: #475569;
+      line-height: 1.65;
+      font-size: 0.98rem;
+      white-space: pre-wrap;
+    }
+
+    .popup-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      border-radius: 16px;
+      padding: 0 18px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: white;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 16px 36px rgba(37, 99, 235, 0.22);
+    }
+
+    .manual-trigger {
+      position: absolute;
+      left: 18px;
+      bottom: 18px;
+      z-index: 3;
+      display: none;
+    }
+
+    .manual-trigger.show { display: inline-flex; }
+
+    .anim-fade { animation: fadeInPop 0.5s ease both; }
+    .anim-slide { animation: slideInPop 0.55s cubic-bezier(.22,.9,.25,1) both; }
+    .anim-zoom { animation: zoomInPop 0.4s cubic-bezier(.2,.8,.2,1) both; }
+    .anim-bounce { animation: bounceInPop 0.8s both; }
+
+    @keyframes fadeInPop {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideInPop {
+      from { opacity: 0; transform: translateY(34px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes zoomInPop {
+      from { opacity: 0; transform: scale(0.88); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes bounceInPop {
+      0% { opacity: 0; transform: scale(0.72); }
+      60% { opacity: 1; transform: scale(1.04); }
+      80% { transform: scale(0.98); }
+      100% { transform: scale(1); }
+    }
+
+    @media (max-width: 1080px) {
+      .app { grid-template-columns: 1fr; }
+      .preview-wrap { position: static; }
+    }
+
+    @media (max-width: 720px) {
+      body { padding: 14px; }
+      .grid { grid-template-columns: 1fr; padding: 18px; }
+      .panel-header { padding: 20px 18px 8px; }
+      .actions, .status { padding-left: 18px; padding-right: 18px; }
+      .preview-shell { min-height: 560px; }
+      .mock-grid { grid-template-columns: 1fr; }
+      .popup-box { width: 100%; border-radius: 22px; padding: 16px; }
+      .popup-close { width: 38px; height: 38px; }
+      pre { font-size: 0.8rem; padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="card">
+      <div class="panel-header">
+        <div class="eyebrow">HTML Tool • Pop-up Builder</div>
+        <h1>Responsive announcement pop-up generator</h1>
+        <p class="subtext">Build a modern website announcement pop-up, preview it live, and generate a clean embed snippet containing HTML, CSS, and JavaScript. The output supports desktop and mobile, multiple animations, timed display, and either direct images or Canva share links.</p>
+      </div>
+
+      <div class="grid">
+        <div class="field full">
+          <label for="badge">Badge / label</label>
+          <input id="badge" value="Important Update" />
+        </div>
+
+        <div class="field">
+          <label for="title">Headline</label>
+          <input id="title" value="New programmes are now open" />
+        </div>
+
+        <div class="field">
+          <label for="ctaText">Button text</label>
+          <input id="ctaText" value="Learn More" />
+        </div>
+
+        <div class="field full">
+          <label for="message">Message</label>
+          <textarea id="message">Announce a launch, promotion, intake date, scholarship, or service update with a polished pop-up that feels premium on both desktop and mobile.</textarea>
+        </div>
+
+        <div class="field">
+          <label for="ctaUrl">Button URL</label>
+          <input id="ctaUrl" value="https://example.com" />
+        </div>
+
+        <div class="field">
+          <label for="delay">Display timing</label>
+          <select id="delay">
+            <option value="0">Show immediately</option>
+            <option value="10">After 10 seconds</option>
+            <option value="15" selected>After 15 seconds</option>
+            <option value="20">After 20 seconds</option>
+            <option value="30">After 30 seconds</option>
+            <option value="manual">Manual trigger only</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="animation">Animation style</label>
+          <select id="animation">
+            <option value="fade">Fade-in</option>
+            <option value="slide" selected>Slide-in</option>
+            <option value="zoom">Zoom</option>
+            <option value="bounce">Bounce</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="position">Layout emphasis</label>
+          <select id="position">
+            <option value="center" selected>Centered modal</option>
+            <option value="bottom">Bottom emphasis</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label for="imageSrc">Image or Canva share link</label>
+          <input id="imageSrc" placeholder="https://example.com/banner.png or https://www.canva.com/design/.../view" />
+          <div class="hint">Accepted: direct PNG/JPEG/JPG links, or Canva share/view links. Direct images render as <code>&lt;img&gt;</code>; Canva links are embedded as an <code>&lt;iframe&gt;</code> when possible.</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="generateBtn">Generate code</button>
+        <button class="secondary" id="previewBtn">Replay preview</button>
+        <button class="secondary" id="copyBtn">Copy embed code</button>
+      </div>
+      <div class="status" id="status">Ready. Edit any field to refresh the live preview.</div>
+    </section>
+
+    <section class="preview-wrap">
+      <div class="preview-label">Live preview</div>
+      <div class="preview-shell card">
+        <div class="mock-site">
+          <div class="mock-topbar"></div>
+          <div class="mock-grid">
+            <div class="mock-card">
+              <div class="mock-line"></div>
+              <div class="mock-line mid"></div>
+              <div class="mock-line short"></div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-line"></div>
+              <div class="mock-line short"></div>
+              <div class="mock-line mid"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="secondary manual-trigger" id="manualTrigger">Open announcement</button>
+
+        <div class="popup-overlay" id="previewOverlay" aria-hidden="true">
+          <div class="popup-box" id="previewPopup" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+            <button class="popup-close" id="closePreview" aria-label="Close pop-up">×</button>
+            <div class="popup-media" id="previewMedia"></div>
+            <div class="popup-badge" id="previewBadge">Important Update</div>
+            <h2 class="popup-title" id="previewTitle">New programmes are now open</h2>
+            <p class="popup-text" id="previewText"></p>
+            <a class="popup-cta" id="previewCta" href="#" target="_blank" rel="noopener">Learn More</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card output-card">
+        <div class="output-head">
+          <strong>Generated embed code</strong>
+          <button class="secondary" id="copyBtnTop">Copy</button>
+        </div>
+        <pre id="output"></pre>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const fields = {
+      badge: document.getElementById('badge'),
+      title: document.getElementById('title'),
+      message: document.getElementById('message'),
+      ctaText: document.getElementById('ctaText'),
+      ctaUrl: document.getElementById('ctaUrl'),
+      delay: document.getElementById('delay'),
+      animation: document.getElementById('animation'),
+      imageSrc: document.getElementById('imageSrc'),
+      position: document.getElementById('position')
+    };
+
+    const preview = {
+      overlay: document.getElementById('previewOverlay'),
+      popup: document.getElementById('previewPopup'),
+      media: document.getElementById('previewMedia'),
+      badge: document.getElementById('previewBadge'),
+      title: document.getElementById('previewTitle'),
+      text: document.getElementById('previewText'),
+      cta: document.getElementById('previewCta'),
+      manualTrigger: document.getElementById('manualTrigger')
+    };
+
+    const output = document.getElementById('output');
+    const status = document.getElementById('status');
+    let previewTimer = null;
+
+    function escapeForHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escapeForTemplate(str) {
+      return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/`/g, '\\`')
+        .replace(/\$\{/g, '\\${');
+    }
+
+    function isImageUrl(url) {
+      return /\.(png|jpe?g)(\?.*)?$/i.test(url.trim());
+    }
+
+    function isCanvaLink(url) {
+      return /canva\.com/i.test(url.trim());
+    }
+
+    function getCanvaEmbedUrl(url) {
+      const clean = url.trim();
+      if (!clean) return '';
+      if (/\/view(\?|$)/i.test(clean)) return clean.replace(/\/view(\?|$)/i, '/view?embed');
+      if (/\?/.test(clean)) return clean + '&embed';
+      return clean + '?embed';
+    }
+
+    function getData() {
+      return {
+        badge: fields.badge.value.trim() || 'Announcement',
+        title: fields.title.value.trim() || 'Website announcement',
+        message: fields.message.value.trim() || 'Add your message here.',
+        ctaText: fields.ctaText.value.trim() || 'Learn More',
+        ctaUrl: fields.ctaUrl.value.trim() || '#',
+        delay: fields.delay.value,
+        animation: fields.animation.value,
+        imageSrc: fields.imageSrc.value.trim(),
+        position: fields.position.value
+      };
+    }
+
+    function updatePreview() {
+      const data = getData();
+      preview.badge.textContent = data.badge;
+      preview.title.textContent = data.title;
+      preview.text.textContent = data.message;
+      preview.cta.textContent = data.ctaText;
+      preview.cta.href = data.ctaUrl || '#';
+
+      preview.popup.className = 'popup-box';
+      preview.popup.classList.add('anim-' + data.animation);
+
+      if (data.position === 'bottom') {
+        preview.overlay.style.alignItems = 'end';
+        preview.overlay.style.paddingBottom = '22px';
+      } else {
+        preview.overlay.style.alignItems = 'center';
+        preview.overlay.style.paddingBottom = '18px';
+      }
+
+      preview.media.innerHTML = '';
+      preview.media.classList.remove('show');
+      if (data.imageSrc) {
+        if (isImageUrl(data.imageSrc)) {
+          preview.media.innerHTML = `<img src="${escapeForHtml(data.imageSrc)}" alt="Announcement visual">`;
+          preview.media.classList.add('show');
+        } else if (isCanvaLink(data.imageSrc)) {
+          preview.media.innerHTML = `<iframe src="${escapeForHtml(getCanvaEmbedUrl(data.imageSrc))}" loading="lazy" allowfullscreen></iframe>`;
+          preview.media.classList.add('show');
+        }
+      }
+
+      preview.manualTrigger.classList.toggle('show', data.delay === 'manual');
+      buildCode();
+      schedulePreview();
+    }
+
+    function showPreview() {
+      preview.overlay.classList.add('show');
+      preview.overlay.setAttribute('aria-hidden', 'false');
+      preview.popup.classList.remove('anim-fade', 'anim-slide', 'anim-zoom', 'anim-bounce');
+      void preview.popup.offsetWidth;
+      preview.popup.classList.add('anim-' + getData().animation);
+    }
+
+    function closePreview() {
+      preview.overlay.classList.remove('show');
+      preview.overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    function schedulePreview() {
+      clearTimeout(previewTimer);
+      closePreview();
+      const { delay } = getData();
+      if (delay === 'manual') {
+        status.textContent = 'Manual trigger mode selected. Use “Open announcement” in the preview or the generated button trigger in your site.';
+        return;
+      }
+      const delayMs = Math.max(0, Number(delay)) * 1000;
+      status.textContent = delayMs === 0
+        ? 'Preview set to show immediately.'
+        : `Preview will auto-open after ${Number(delay)} seconds.`;
+      previewTimer = setTimeout(showPreview, delayMs);
+    }
+
+    function buildCode() {
+      const data = getData();
+      const imageMode = isImageUrl(data.imageSrc) ? 'image' : (isCanvaLink(data.imageSrc) ? 'canva' : 'none');
+      const canvaUrl = getCanvaEmbedUrl(data.imageSrc);
+      const manualButtonHtml = data.delay === 'manual'
+        ? '<button id="announcementTriggerBtn" type="button">Open announcement</button>'
+        : '';
+
+      const generated = `<!-- Responsive Announcement Pop-up -->
+<div id="announcementPopupRoot"></div>
+${manualButtonHtml}
+
+<style>
+  #announcementPopupRoot *, #announcementTriggerBtn { box-sizing: border-box; }
+  #announcementPopupRoot {
+    --ap-font: Inter, Arial, sans-serif;
+    --ap-bg: rgba(15, 23, 42, 0.55);
+    --ap-card: rgba(255,255,255,0.98);
+    --ap-text: #0f172a;
+    --ap-muted: #475569;
+    --ap-primary: #2563eb;
+    --ap-primary-2: #1d4ed8;
+    --ap-border: rgba(15,23,42,0.08);
+    --ap-shadow: 0 28px 70px rgba(15,23,42,0.28);
+  }
+  #announcementPopupRoot .ap-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: ${data.position === 'bottom' ? 'end' : 'center'};
+    justify-content: center;
+    padding: ${data.position === 'bottom' ? '18px 14px 22px' : '18px 14px'};
+    background: var(--ap-bg);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .25s ease, visibility .25s ease;
+  }
+  #announcementPopupRoot .ap-overlay.ap-show { opacity: 1; visibility: visible; }
+  #announcementPopupRoot .ap-box {
+    position: relative;
+    width: min(94vw, 560px);
+    max-height: min(88vh, 700px);
+    overflow: auto;
+    background: var(--ap-card);
+    color: var(--ap-text);
+    border: 1px solid var(--ap-border);
+    border-radius: 26px;
+    box-shadow: var(--ap-shadow);
+    padding: 18px;
+    font-family: var(--ap-font);
+    transform-origin: center center;
+  }
+  #announcementPopupRoot .ap-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    background: rgba(15,23,42,0.06);
+    color: #0f172a;
+    font-size: 18px;
+    line-height: 1;
+  }
+  #announcementPopupRoot .ap-media {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #e2e8f0, #f8fafc);
+    display: ${imageMode === 'none' ? 'none' : 'block'};
+    margin-bottom: 16px;
+  }
+  #announcementPopupRoot .ap-media img,
+  #announcementPopupRoot .ap-media iframe {
+    width: 100%;
+    height: 100%;
+    display: block;
+    border: 0;
+    object-fit: cover;
+  }
+  #announcementPopupRoot .ap-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(37,99,235,0.08);
+    border: 1px solid rgba(37,99,235,0.15);
+    color: var(--ap-primary);
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+  #announcementPopupRoot .ap-title {
+    margin: 14px 0 8px;
+    font-size: clamp(1.5rem, 2.2vw, 2.2rem);
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+  }
+  #announcementPopupRoot .ap-text {
+    margin: 0 0 18px;
+    color: var(--ap-muted);
+    line-height: 1.65;
+    white-space: pre-wrap;
+    font-size: .98rem;
+  }
+  #announcementPopupRoot .ap-btn,
+  #announcementTriggerBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    padding: 0 18px;
+    border-radius: 16px;
+    border: 0;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 800;
+    font-family: var(--ap-font);
+  }
+  #announcementPopupRoot .ap-btn {
+    background: linear-gradient(135deg, var(--ap-primary), var(--ap-primary-2));
+    color: #fff;
+    box-shadow: 0 16px 34px rgba(37,99,235,0.22);
+  }
+  #announcementTriggerBtn {
+    background: #ffffff;
+    color: #0f172a;
+    border: 1px solid rgba(15,23,42,0.12);
+    box-shadow: 0 10px 24px rgba(15,23,42,0.08);
+  }
+  #announcementPopupRoot .ap-anim-fade { animation: apFade .45s ease both; }
+  #announcementPopupRoot .ap-anim-slide { animation: apSlide .55s cubic-bezier(.22,.9,.25,1) both; }
+  #announcementPopupRoot .ap-anim-zoom { animation: apZoom .38s cubic-bezier(.2,.8,.2,1) both; }
+  #announcementPopupRoot .ap-anim-bounce { animation: apBounce .8s both; }
+  @keyframes apFade { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
+  @keyframes apSlide { from { opacity: 0; transform: translateY(32px);} to { opacity: 1; transform: translateY(0);} }
+  @keyframes apZoom { from { opacity: 0; transform: scale(.88);} to { opacity: 1; transform: scale(1);} }
+  @keyframes apBounce {
+    0% { opacity: 0; transform: scale(.72); }
+    60% { opacity: 1; transform: scale(1.04); }
+    80% { transform: scale(.98); }
+    100% { transform: scale(1); }
+  }
+  @media (max-width: 640px) {
+    #announcementPopupRoot .ap-box {
+      width: min(100vw - 18px, 100%);
+      border-radius: 22px;
+      padding: 16px;
+    }
+    #announcementPopupRoot .ap-close { width: 38px; height: 38px; }
+  }
+</style>
+
+<script>
+  (function () {
+    const root = document.getElementById('announcementPopupRoot');
+    if (!root) return;
+
+    const config = {
+      badge: \
+`${escapeForTemplate(data.badge)}\`,
+      title: \
+`${escapeForTemplate(data.title)}\`,
+      message: \
+`${escapeForTemplate(data.message)}\`,
+      ctaText: \
+`${escapeForTemplate(data.ctaText)}\`,
+      ctaUrl: \
+`${escapeForTemplate(data.ctaUrl)}\`,
+      delay: ${data.delay === 'manual' ? `'manual'` : Number(data.delay)},
+      animation: '${data.animation}',
+      mediaType: '${imageMode}',
+      mediaSrc: \
+`${escapeForTemplate(imageMode === 'canva' ? canvaUrl : data.imageSrc)}\`
+    };
+
+    root.innerHTML = \
+`<div class="ap-overlay" aria-hidden="true">
+      <div class="ap-box ap-anim-${data.animation}" role="dialog" aria-modal="true" aria-labelledby="apTitle">
+        <button class="ap-close" type="button" aria-label="Close pop-up">×</button>
+        <div class="ap-media">
+          \
+${imageMode === 'image'
+  ? `<img src="${escapeForTemplate(data.imageSrc)}" alt="Announcement visual">`
+  : imageMode === 'canva'
+    ? `<iframe src="${escapeForTemplate(canvaUrl)}" loading="lazy" allowfullscreen></iframe>`
+    : ''}\
+
+        </div>
+        <div class="ap-badge">${escapeForTemplate(data.badge)}</div>
+        <h2 class="ap-title" id="apTitle">${escapeForTemplate(data.title)}</h2>
+        <p class="ap-text">${escapeForTemplate(data.message)}</p>
+        <a class="ap-btn" href="${escapeForTemplate(data.ctaUrl)}" target="_blank" rel="noopener">${escapeForTemplate(data.ctaText)}</a>
+      </div>
+    </div>\`;
+
+    const overlay = root.querySelector('.ap-overlay');
+    const box = root.querySelector('.ap-box');
+    const closeBtn = root.querySelector('.ap-close');
+    const triggerBtn = document.getElementById('announcementTriggerBtn');
+
+    function openPopup() {
+      overlay.classList.add('ap-show');
+      overlay.setAttribute('aria-hidden', 'false');
+      box.classList.remove('ap-anim-fade', 'ap-anim-slide', 'ap-anim-zoom', 'ap-anim-bounce');
+      void box.offsetWidth;
+      box.classList.add('ap-anim-' + config.animation);
+    }
+
+    function closePopup() {
+      overlay.classList.remove('ap-show');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    closeBtn.addEventListener('click', closePopup);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closePopup();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePopup();
+    });
+
+    if (triggerBtn) {
+      triggerBtn.addEventListener('click', openPopup);
+    }
+
+    if (config.delay !== 'manual') {
+      window.setTimeout(openPopup, Math.max(0, Number(config.delay)) * 1000);
+    }
+  })();
+<\/script>`;
+
+      output.textContent = generated;
+    }
+
+    async function copyCode() {
+      try {
+        await navigator.clipboard.writeText(output.textContent);
+        status.textContent = 'Embed code copied to clipboard.';
+      } catch (err) {
+        status.textContent = 'Clipboard copy failed. You can still copy the code manually.';
+      }
+    }
+
+    document.getElementById('previewBtn').addEventListener('click', showPreview);
+    document.getElementById('closePreview').addEventListener('click', closePreview);
+    preview.overlay.addEventListener('click', (e) => {
+      if (e.target === preview.overlay) closePreview();
+    });
+    preview.manualTrigger.addEventListener('click', showPreview);
+    document.getElementById('generateBtn').addEventListener('click', () => {
+      buildCode();
+      status.textContent = 'Fresh embed code generated.';
+    });
+    document.getElementById('copyBtn').addEventListener('click', copyCode);
+    document.getElementById('copyBtnTop').addEventListener('click', copyCode);
+
+    Object.values(fields).forEach((el) => {
+      el.addEventListener('input', updatePreview);
+      el.addEventListener('change', updatePreview);
+    });
+
+    updatePreview();
+  </script>
+</body>
+</html>
